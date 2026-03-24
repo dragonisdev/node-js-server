@@ -11,8 +11,18 @@ The scope of the project is as follows:
 - jsonwebtoken for JWT
 - Basic SQL database for storing data
 
+
+### How to run this?
+
+`npm i` to install dependencies
+
+`npm run dev` to run the server via nodemon for in real time changes
+
+for real db connection, use your own mysql db and the correct database variables, run the schema and you should be fine
+
 ### Folder structure
 
+```
 student-crud-app/
 ├── node_modules/
 ├── backend/              # Backend files
@@ -26,5 +36,6 @@ student-crud-app/
     └── test.js
 ├── .env
 ├── .gitignore
+```
 
 The final project will be hosted on Railway PaaS and uses their MySQL database

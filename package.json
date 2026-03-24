@@ -1,0 +1,23 @@
+{
+  "name": "node-js-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "nodemon backend/server.js",
+    "test": "node tests/test.js"
+  },
+  "keywords": ["node", "server", "mysql"],
+  "author": "dragonis",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "dotenv": "^16.4.5",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.9.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
