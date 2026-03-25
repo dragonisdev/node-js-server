@@ -8,14 +8,20 @@
     "dev": "nodemon backend/server.js",
     "test": "node tests/test.js"
   },
-  "keywords": ["node", "server", "mysql"],
+  "keywords": [
+    "node",
+    "server",
+    "mysql"
+  ],
   "author": "dragonis",
   "license": "ISC",
   "dependencies": {
-    "bcrypt": "^5.1.1",
+    "bcrypt": "^6.0.0",
     "dotenv": "^16.4.5",
+    "drizzle-kit": "^0.31.10",
+    "drizzle-orm": "^0.45.1",
     "jsonwebtoken": "^9.0.2",
-    "mysql2": "^3.9.7"
+    "mysql2": "^3.20.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
