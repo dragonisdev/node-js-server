@@ -1,26 +1,51 @@
 const http = require('http')
 const fs = require('fs')
 const path = require('path')
-const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
 const { db, users } = require('./db')
 const { eq } = require('drizzle-orm')
+const crypto = require('crypto')
 
-const PORT = 3000
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+const PORT = process.env.PORT || 3000
 
-// parse JSON body
+// In-memory session store
+const sessions = new Map()
+
+function generateSessionId() {
+  return crypto.randomBytes(32).toString('hex')
+}
+
+function verifySession(req) {
+  const cookies = parseCookies(req)
+  const sessionId = cookies.sessionId
+  if (!sessionId) return null
+  const session = sessions.get(sessionId)
+  return session || null
+}
+
+// parse JSON request body from HTTP POST requests
 function parseBody(req) {
+  // return a promise
   return new Promise((resolve, reject) => {
-    let body = ''
+    let body = '' // empty string to hold all the incoming data
+    
+    // HTTP requests come in chunks. This event fires for each chunk of data.
+    // We add each chunk to our body string to build the complete request data.
     req.on('data', chunk => (body += chunk))
+    
+    // This event fires when ALL data has been received (the stream is finished)
     req.on('end', () => {
       try {
-        resolve(JSON.parse(body))
+        // Try to convert the collected string into a JavaScript object
+        const parsedData = JSON.parse(body)
+        resolve(parsedData) // Success! Return the parsed object
       } catch {
+        // If JSON.parse fails (bad JSON format), return empty object instead of crashing
         resolve({})
       }
     })
+    
+    // If there's a network error while receiving data, reject the Promise
     req.on('error', reject)
   })
 }
@@ -36,23 +61,11 @@ function parseCookies(req) {
   })
   return cookies
 }
- 
-function verifyToken(req) {
-  const cookies = parseCookies(req)
-  const token = cookies.token
-  if (!token) return null
-  try {
-    return jwt.verify(token, JWT_SECRET)
-  } catch {
-    return null
-  }
-}
- 
+
 function sendJSON(res, status, data) {
   res.writeHead(status, { 'Content-Type': 'application/json' })
   res.end(JSON.stringify(data))
 }
-
 
 // serve files
 function serveFile(res, filePath, contentType) {
@@ -66,130 +79,130 @@ function serveFile(res, filePath, contentType) {
   })
 }
 
-
 // serve actual files
 
 const server = http.createServer((req, res) => {
-    const { method, url } = req
-    const publicDir = path.join(__dirname, '../client')
+  const { method, url } = req
+  const publicDir = path.join(__dirname, '../client')
 
-    // static files
-    if (method === 'GET' && url === '/') {
-        return serveFile(res, path.join(publicDir, 'login.html'), 'text/html')
-    }
+  // static files
 
-    if (method === 'GET' && url === '/style.css') {
-        return serveFile(res, path.join(publicDir, 'style.css'), 'text/css')
-    }
+  //get login, everyone lands on login
+  if (method === 'GET' && (url === '/' || url === '/login')) {
+    return serveFile(res, path.join(publicDir, 'login.html'), 'text/html')
+  }
 
-    if (method === 'GET' && url === '/script.js') {
-        return serveFile(res, path.join(publicDir, 'script.js'), 'application/javascript')
-    }
+  if (method === 'GET' && url === '/style.css') {
+    return serveFile(res, path.join(publicDir, 'style.css'), 'text/css')
+  }
 
-    // serve register page
-    if (method === 'GET' && url === '/register') {
-        return serveFile(res, path.join(publicDir, 'register.html'), 'text/html')
-    }
+  if (method === 'GET' && url === '/script.js') {
+    return serveFile(res, path.join(publicDir, 'script.js'), 'application/javascript')
+  }
 
-    // login route
-    if (method === 'POST' && url === '/login') {
-        return (async () => {
-            try {
-                const body = await parseBody(req)
-                const { username, password } = body
-                try {
-                    const result = await db.select().from(users).where(eq(users.username, username))
-                    if (result.length === 0) {
-                        res.writeHead(401, { 'Content-Type': 'application/json' })
-                        return res.end(JSON.stringify({ error: 'Invalid credentials' }))
-                    }
-                    const user = result[0]
-                    const isValid = await bcrypt.compare(password, user.passwordHash)
-                    if (!isValid) {
-                        res.writeHead(401, { 'Content-Type': 'application/json' })
-                        return res.end(JSON.stringify({ error: 'Invalid credentials' }))
-                    }
-                    const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '1h' })
-                    res.writeHead(200, {
-                        'Content-Type': 'application/json',
-                        'Set-Cookie': `token=${token}; HttpOnly; Path=/; Max-Age=3600`
-                    })
-                    res.end(JSON.stringify({ message: 'Logged in' }))
-                } catch (error) {
-                    console.error(error)
-                    res.writeHead(500, { 'Content-Type': 'application/json' })
-                    res.end(JSON.stringify({ error: 'Internal server error' }))
-                }
-            } catch (error) {
-                console.error(error)
-                res.writeHead(400, { 'Content-Type': 'application/json' })
-                res.end(JSON.stringify({ error: 'Invalid JSON' }))
-            }
-        })()
-    }
+  // serve register page
+  if (method === 'GET' && url === '/register') {
+    return serveFile(res, path.join(publicDir, 'register.html'), 'text/html')
+  }
 
-    // register route
-    if (method === 'POST' && url === '/register') {
-        return (async () => {
-            try {
-                const body = await parseBody(req)
-                const { username, password } = body
-                try {
-                    const hashedPassword = await bcrypt.hash(password, 10)
-                    await db.insert(users).values({
-                        username,
-                        passwordHash: hashedPassword,
-                    })
-                    res.writeHead(201, { 'Content-Type': 'application/json' })
-                    res.end(JSON.stringify({ message: 'User registered' }))
-                } catch (error) {
-                    console.error(error)
-                    if (error.code === 'ER_DUP_ENTRY') {
-                        res.writeHead(409, { 'Content-Type': 'application/json' })
-                        res.end(JSON.stringify({ error: 'Username already exists' }))
-                    } else {
-                        res.writeHead(500, { 'Content-Type': 'application/json' })
-                        res.end(JSON.stringify({ error: 'Internal server error' }))
-                    }
-                }
-            } catch (error) {
-                console.error(error)
-                res.writeHead(400, { 'Content-Type': 'application/json' })
-                res.end(JSON.stringify({ error: 'Invalid JSON' }))
-            }
-        })()
-    }
-
-    // protected dashboard
-    if (method === 'GET' && url === '/dashboard') {
-        const cookies = parseCookies(req)
-        const token = cookies.token
-        if (!token) {
-            res.writeHead(302, { 'Location': '/' })
-            return res.end()
-        }
+  // login route
+  if (method === 'POST' && url === '/login') {
+    return (async () => {
+      try {
+        const body = await parseBody(req)
+        const { username, password } = body
         try {
-            jwt.verify(token, JWT_SECRET)
-            return serveFile(res, path.join(publicDir, 'dashboard.html'), 'text/html')
-        } catch (err) {
-            res.writeHead(302, { 'Location': '/' })
-            return res.end()
-        }
-    }
-
-    // logout route
-    if (method === 'POST' && url === '/logout') {
-        res.writeHead(200, {
+          const result = await db.select().from(users).where(eq(users.username, username))
+          if (result.length === 0) {
+            res.writeHead(401, { 'Content-Type': 'application/json' })
+            return res.end(JSON.stringify({ error: 'Invalid credentials' }))
+          }
+          const user = result[0]
+          const isValid = await bcrypt.compare(password, user.passwordHash)
+          if (!isValid) {
+            res.writeHead(401, { 'Content-Type': 'application/json' })
+            return res.end(JSON.stringify({ error: 'Invalid credentials' }))
+          }
+          const sessionId = generateSessionId()
+          sessions.set(sessionId, { userId: user.id, username: user.username })
+          res.writeHead(200, {
             'Content-Type': 'application/json',
-            'Set-Cookie': 'token=; HttpOnly; Path=/; Max-Age=0'
-        })
-        res.end(JSON.stringify({ message: 'Logged out' }))
-    }
+            'Set-Cookie': `sessionId=${sessionId}; HttpOnly; SameSite=Strict; Path=/; Max-Age=3600`
+          })
+          res.end(JSON.stringify({ message: 'Logged in' }))
+        } catch (error) {
+          console.error(error)
+          res.writeHead(500, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ error: 'Internal server error' }))
+        }
+      } catch (error) {
+        console.error(error)
+        res.writeHead(400, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'Invalid JSON' }))
+      }
+    })()
+  }
 
-    else {
-        res.writeHead(404);
-        res.end('Not found');
+  // register route
+  if (method === 'POST' && url === '/register') {
+    return (async () => {
+      try {
+        const body = await parseBody(req)
+        const { username, password } = body
+        try {
+          const hashedPassword = await bcrypt.hash(password, 10)
+          await db.insert(users).values({
+            username,
+            passwordHash: hashedPassword,
+          })
+          res.writeHead(201, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ message: 'User registered' }))
+        } catch (error) {
+          console.error(error)
+          if (error.cause?.code === 'ER_DUP_ENTRY') {
+            res.writeHead(409, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ error: 'Username already exists' }))
+          } else {
+            res.writeHead(500, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ error: 'Internal server error' }))
+          }
+        }
+      } catch (error) {
+        console.error(error)
+        res.writeHead(400, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'Invalid JSON' }))
+      }
+    })()
+  }
+
+  // protected dashboard
+  if (method === 'GET' && url === '/dashboard') {
+    const session = verifySession(req)
+    if (!session) {
+      res.writeHead(302, { 'Location': '/' })
+      return res.end()
     }
+    return serveFile(res, path.join(publicDir, 'dashboard.html'), 'text/html')
+  }
+
+  // logout route
+  if (method === 'POST' && url === '/logout') {
+    const cookies = parseCookies(req)
+    const sessionId = cookies.sessionId
+    if (sessionId) {
+      sessions.delete(sessionId)
+    }
+    res.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Set-Cookie': 'sessionId=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'
+    })
+    res.end(JSON.stringify({ message: 'Logged out' }))
+  }
+
+  else {
+    res.writeHead(404);
+    res.end('Not found');
+  }
 }) 
 
 //starting server

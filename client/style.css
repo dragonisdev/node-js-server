@@ -1,55 +1,238 @@
+/* Material Design inspired styles */
+:root {
+  --primary-color: #1976d2;
+  --primary-dark: #1565c0;
+  --primary-light: #42a5f5;
+  --text-on-primary: #ffffff;
+  --background: #fafafa;
+  --surface: #ffffff;
+  --error: #f44336;
+  --text-primary: #212121;
+  --text-secondary: #757575;
+  --border-radius: 4px;
+  --shadow: 0 2px 4px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-hover: 0 4px 8px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
-    margin: 0;
-    padding: 20px;
+  font-family: 'Roboto', sans-serif;
+  background: var(--background);
+  color: var(--text-primary);
+  margin: 0;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
 }
 
-.register-container, .dashboard-container {
-    max-width: 400px;
-    margin: 50px auto;
-    padding: 20px;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
 }
 
-h2 {
-    text-align: center;
-    color: #333;
-    margin-bottom: 20px;
+.login-container {
+  background: var(--surface);
+  padding: 32px;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  width: 100%;
+  max-width: 400px;
 }
 
-form {
-    display: flex;
-    flex-direction: column;
+.login-container h2 {
+  margin: 0 0 24px 0;
+  font-weight: 400;
+  color: var(--text-primary);
+  text-align: center;
 }
 
-input {
-    padding: 12px;
-    margin: 8px 0;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 16px;
+/* Material Design Input Fields */
+input[type="text"],
+input[type="password"] {
+  width: 100%;
+  padding: 16px 12px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(0,0,0,0.23);
+  border-radius: var(--border-radius);
+  font-family: 'Roboto', sans-serif;
+  font-size: 16px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: var(--surface);
 }
 
+input[type="text"]:focus,
+input[type="password"]:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+}
+
+input[type="text"]::placeholder,
+input[type="password"]::placeholder {
+  color: var(--text-secondary);
+}
+
+/* Material Design Buttons */
 button {
-    padding: 12px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 16px;
-    cursor: pointer;
-    margin-top: 10px;
+  width: 100%;
+  padding: 12px 24px;
+  border: none;
+  border-radius: var(--border-radius);
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
 }
 
-button:hover {
-    background-color: #0056b3;
+button[type="submit"] {
+  background: var(--primary-color);
+  color: var(--text-on-primary);
+  box-shadow: var(--shadow);
 }
 
+button[type="submit"]:hover {
+  background: var(--primary-dark);
+  box-shadow: var(--shadow-hover);
+}
+
+button[type="submit"]:active {
+  transform: translateY(1px);
+  box-shadow: var(--shadow);
+}
+
+button[type="button"] {
+  background: transparent;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  margin-top: 16px;
+}
+
+button[type="button"]:hover {
+  background: rgba(25, 118, 210, 0.04);
+  box-shadow: var(--shadow);
+}
+
+/* Ripple effect for buttons */
+button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+button:active::after {
+  width: 300px;
+  height: 300px;
+}
+
+/* Message styling */
 #message {
-    margin-top: 15px;
-    text-align: center;
-    font-weight: bold;
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: var(--border-radius);
+  text-align: center;
+  font-size: 14px;
+}
+
+#message.error {
+  background: rgba(244, 67, 54, 0.08);
+  color: var(--error);
+  border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+#message.success {
+  background: rgba(76, 175, 80, 0.08);
+  color: #4caf50;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+/* Form styling */
+form {
+  margin: 0;
+}
+
+/* Link button styling */
+a {
+  text-decoration: none;
+  display: block;
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  body {
+    padding: 16px;
+  }
+  
+  .login-container {
+    padding: 24px;
+  }
+}
+
+/* Loading state */
+button.loading {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+button.loading::before {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  margin: auto;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Dashboard specific styles */
+.dashboard-container {
+  text-align: center;
+}
+
+.dashboard-container p {
+  margin-bottom: 24px;
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+
+#logoutBtn {
+  background: transparent;
+  color: var(--error);
+  border: 1px solid var(--error);
+  max-width: 200px;
+  margin: 0 auto;
+}
+
+#logoutBtn:hover {
+  background: rgba(244, 67, 54, 0.04);
+  box-shadow: var(--shadow);
 }

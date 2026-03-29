@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node backend/server.js",
     "dev": "nodemon backend/server.js",
-    "test": "node tests/test.js"
+    "test": "node tests/test.js",
+    "migrate": "node backend/migrate.js"
   },
   "keywords": [
     "node",

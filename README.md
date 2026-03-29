@@ -1,24 +1,30 @@
-## Vanilla Node JS Server
+## Course Management System
 
-I am trying to create an HTTP web server using vanilla Node.js for my upcoming developer internship practice as well as for my school project.
+A simple web application for managing courses, students, and instructors. Built with vanilla Node.js for a school project and internship practice.
 
-The scope of the project is as follows: 
-- Login system that is secure for students and admins
-    - Only admins can create, update or remove students
-    - Students can add, update, or remove their own courses
-- A third party API? 
-- bcrypt for password hashing
-- jsonwebtoken for JWT
-- Basic SQL database for storing data
+### What it does
+- Login system for students, instructors, and admins
+- Instructors can create and manage courses with schedules
+- Students can enroll in courses and view their schedules
+- Track student grades and enrollment status
 
+### Security Features
+- Password hashing with bcrypt
+- JWT tokens for secure login
+- Role-based access control (admin, instructor, student)
+
+### Database
+- MySQL database with proper relationships
+- Stores users, courses, schedules, and enrollments
+- Handles course capacity and scheduling
 
 ### How to run this?
 
 `npm i` to install dependencies
 
-`npm run dev` to run the server via nodemon for in real time changes
+`npm run dev` to run the server with nodemon
 
-for real db connection, use your own mysql db and the correct database variables, run the schema and you should be fine
+For the database, set up your own MySQL database and run the schema file in the backend folder.
 
 ### Folder structure
 
@@ -39,3 +45,5 @@ student-crud-app/
 ```
 
 The final project will be hosted on Railway PaaS and uses their MySQL database
+
+Cross site request forgery (CSRF) protection is implemented using SameSite=Strict cookies
