@@ -203,9 +203,12 @@ const server = http.createServer((req, res) => {
     res.writeHead(404);
     res.end('Not found');
   }
-}) 
+})
 
-//starting server
-server.listen(PORT, () => {
-    console.log(`Server running on port http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log(`Server running on port http://localhost:${PORT}`)
+  })
+}
+
+module.exports = { server }

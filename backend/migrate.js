@@ -1,13 +1,14 @@
 require('dotenv').config()
 const mysql = require('mysql2/promise')
 const fs = require('fs')
+const path = require('path')
 
 async function runMigration() {
   try {
     const connection = await mysql.createConnection(process.env.DATABASE_URL)
     
     // Read and execute schema
-    const schema = fs.readFileSync('./schema.sql', 'utf8')
+    const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8')
     
     // Split by semicolon and execute each statement
     const statements = schema
