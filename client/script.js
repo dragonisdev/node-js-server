@@ -1,6 +1,9 @@
 // Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', () => {
     
+    // Check user role and redirect accordingly
+    checkUserRole();
+    
     // Login form
     const loginForm = document.getElementById('loginForm')
     if (loginForm) {
@@ -18,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
                 const data = await response.json()
                 if (response.ok) {
-                    window.location.href = '/dashboard'
+                    window.location.href = '/admin-dashboard'
                 } else {
                     message.textContent = data.error || 'Login failed'
                     message.style.color = 'red'
@@ -53,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
                 const data = await response.json()
                 if (response.ok) {
-                    window.location.href = '/dashboard'
+                    window.location.href = '/admin-dashboard'
                 } else {
                     message.textContent = data.error || 'Registration failed'
                     message.style.color = 'red'
@@ -77,3 +80,44 @@ document.addEventListener('DOMContentLoaded', () => {
         })
     }
 })
+
+async function checkUserRole() {
+    // Only run this check if we're on the dashboard page
+    if (!window.location.pathname.includes('dashboard')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/user/profile');
+        if (!response.ok) {
+            window.location.href = '/';
+            return;
+        }
+        
+        const user = await response.json();
+        
+        // Redirect based on role
+        const currentPath = window.location.pathname;
+        const adminRoute = '/admin-dashboard';
+        const studentRoute = '/student-dashboard';
+        
+        if (user.role === 'admin') {
+            // Redirect to admin dashboard if not already there
+            if (currentPath !== adminRoute) {
+                window.location.href = adminRoute;
+            }
+        } else if (user.role === 'student') {
+            // Redirect to student dashboard if not already there
+            if (currentPath !== studentRoute) {
+                window.location.href = studentRoute;
+            }
+        } else {
+            // Handle unknown roles - redirect to home
+            console.warn('Unknown user role:', user.role);
+            window.location.href = '/';
+        }
+    } catch (error) {
+        console.error('Error checking user role:', error);
+        window.location.href = '/';
+    }
+}

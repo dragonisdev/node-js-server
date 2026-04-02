@@ -2,25 +2,84 @@ const http = require('http')
 const fs = require('fs')
 const path = require('path')
 const bcrypt = require('bcrypt')
-const { db, users } = require('./db')
+const { db, users, courses } = require('./db')
 const { eq } = require('drizzle-orm')
 const crypto = require('crypto')
 
 const PORT = process.env.PORT || 3000
 
-// In-memory session store
+// Store active sessions as a map
 const sessions = new Map()
 
+// Simple rate limiter: max 10 requests per minute per IP
+const rateLimitStore = new Map()
+function rateLimit(req) {
+  const ip = req.socket.remoteAddress
+  const now = Date.now()
+  const entry = rateLimitStore.get(ip)
+  if (!entry || now > entry.resetTime) {
+    rateLimitStore.set(ip, { count: 1, resetTime: now + 60_000 })
+    return false
+  }
+  entry.count++
+  return entry.count > 10
+}
+
+// generate cookie
 function generateSessionId() {
   return crypto.randomBytes(32).toString('hex')
 }
+// Cookies are generated in server, and sent to the browser. Subsequent requests parse the incoming cookies
 
+// parse cookies
+function parseCookies(req) {
+  // Create an empty object to store the parsed cookies
+  const cookies = {}
+  
+  // Get the 'cookie' header from the HTTP request
+  const header = req.headers.cookie
+  
+  // If there's no cookie header, return the empty object
+  if (!header) return cookies
+  
+  header.split(';').forEach(pair => {
+    // Trim whitespace and split each pair by '=' to separate key and value
+    // Use destructuring: key is the first part, val is the rest (in case value contains '=')
+    const [key, ...val] = pair.trim().split('=')
+    
+    // Store the cookie in the cookies object, joining val back in case it had '='
+    cookies[key] = val.join('=')
+  })
+  
+  // Return the object containing all parsed cookies
+  return cookies
+}
+
+// We parse the cookies
 function verifySession(req) {
+  //First we parse cookies
   const cookies = parseCookies(req)
   const sessionId = cookies.sessionId
   if (!sessionId) return null
   const session = sessions.get(sessionId)
   return session || null
+}
+
+// We check if user is admin with this function
+async function verifyAdmin(req) {
+  //First we verify session
+  const session = verifySession(req)
+  if (!session) return null
+  
+  try {
+    const result = await db.select().from(users).where(eq(users.id, session.userId))
+    if (result.length === 0) return null
+    const user = result[0]
+    return user.role === 'admin' ? user : null
+  } catch (error) {
+    console.error('Error verifying admin:', error)
+    return null
+  }
 }
 
 // parse JSON request body from HTTP POST requests
@@ -50,17 +109,7 @@ function parseBody(req) {
   })
 }
 
-// parse cookies
-function parseCookies(req) {
-  const cookies = {}
-  const header = req.headers.cookie
-  if (!header) return cookies
-  header.split(';').forEach(pair => {
-    const [key, ...val] = pair.trim().split('=')
-    cookies[key] = val.join('=')
-  })
-  return cookies
-}
+
 
 function sendJSON(res, status, data) {
   res.writeHead(status, { 'Content-Type': 'application/json' })
@@ -105,8 +154,29 @@ const server = http.createServer((req, res) => {
     return serveFile(res, path.join(publicDir, 'register.html'), 'text/html')
   }
 
+  // serve admin dashboard page
+  if (method === 'GET' && url === '/admin-dashboard') {
+    return serveFile(res, path.join(publicDir, 'admin-dashboard.html'), 'text/html')
+  }
+
+  // serve course management page
+  if (method === 'GET' && url === '/course-management') {
+    return serveFile(res, path.join(publicDir, 'course-management.html'), 'text/html')
+  }
+
+  // serve admin.js
+  if (method === 'GET' && url === '/admin.js') {
+    return serveFile(res, path.join(publicDir, 'admin.js'), 'application/javascript')
+  }
+
+  // serve course-management.js
+  if (method === 'GET' && url === '/course-management.js') {
+    return serveFile(res, path.join(publicDir, 'course-management.js'), 'application/javascript')
+  }
+
   // login route
   if (method === 'POST' && url === '/login') {
+    if (rateLimit(req)) return sendJSON(res, 429, { error: 'Too many requests, please try again later' })
     return (async () => {
       try {
         const body = await parseBody(req)
@@ -145,6 +215,7 @@ const server = http.createServer((req, res) => {
 
   // register route
   if (method === 'POST' && url === '/register') {
+    if (rateLimit(req)) return sendJSON(res, 429, { error: 'Too many requests, please try again later' })
     return (async () => {
       try {
         const body = await parseBody(req)
@@ -196,7 +267,167 @@ const server = http.createServer((req, res) => {
       'Content-Type': 'application/json',
       'Set-Cookie': 'sessionId=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'
     })
-    res.end(JSON.stringify({ message: 'Logged out' }))
+    return res.end(JSON.stringify({ message: 'Logged out' }))
+  }
+
+  // GET /api/admin/courses - list all courses
+  if (method === 'GET' && url === '/api/admin/courses') {
+    return (async () => {
+      const admin = await verifyAdmin(req)
+      if (!admin) return sendJSON(res, 401, { error: 'Unauthorized' })
+      try {
+        const result = await db.select().from(courses)
+        sendJSON(res, 200, result)
+      } catch (error) {
+        console.error(error)
+        sendJSON(res, 500, { error: 'Internal server error' })
+      }
+    })()
+  }
+
+  // POST /api/admin/courses - create a course
+  if (method === 'POST' && url === '/api/admin/courses') {
+    return (async () => {
+      const admin = await verifyAdmin(req)
+      if (!admin) return sendJSON(res, 401, { error: 'Unauthorized' })
+      try {
+        const body = await parseBody(req)
+        const { title, courseCode, credits, maxStudents, startDate, endDate } = body
+        await db.insert(courses).values({
+          title,
+          courseCode,
+          credits: Number(credits),
+          maxStudents: Number(maxStudents),
+          startDate: startDate || null,
+          endDate: endDate || null,
+        })
+        sendJSON(res, 201, { message: 'Course created' })
+      } catch (error) {
+        console.error(error)
+        if (error.cause?.code === 'ER_DUP_ENTRY') {
+          sendJSON(res, 409, { error: 'Course code already exists' })
+        } else {
+          sendJSON(res, 500, { error: 'Internal server error' })
+        }
+      }
+    })()
+  }
+
+  // GET /PUT /DELETE /api/admin/courses/:id
+  if (url.startsWith('/api/admin/courses/')) {
+    const id = parseInt(url.split('/')[4])
+    if (isNaN(id)) return sendJSON(res, 400, { error: 'Invalid id' })
+
+    if (method === 'GET') {
+      return (async () => {
+        const admin = await verifyAdmin(req)
+        if (!admin) return sendJSON(res, 401, { error: 'Unauthorized' })
+        try {
+          const result = await db.select().from(courses).where(eq(courses.id, id))
+          if (result.length === 0) return sendJSON(res, 404, { error: 'Course not found' })
+          sendJSON(res, 200, result[0])
+        } catch (error) {
+          console.error(error)
+          sendJSON(res, 500, { error: 'Internal server error' })
+        }
+      })()
+    }
+
+    if (method === 'PUT') {
+      return (async () => {
+        const admin = await verifyAdmin(req)
+        if (!admin) return sendJSON(res, 401, { error: 'Unauthorized' })
+        try {
+          const body = await parseBody(req)
+          const { title, courseCode, credits, maxStudents, startDate, endDate, isActive } = body
+          await db.update(courses).set({
+            title,
+            courseCode,
+            credits: Number(credits),
+            maxStudents: Number(maxStudents),
+            startDate: startDate || null,
+            endDate: endDate || null,
+            isActive: Boolean(isActive),
+          }).where(eq(courses.id, id))
+          sendJSON(res, 200, { message: 'Course updated' })
+        } catch (error) {
+          console.error(error)
+          sendJSON(res, 500, { error: 'Internal server error' })
+        }
+      })()
+    }
+
+    if (method === 'DELETE') {
+      return (async () => {
+        const admin = await verifyAdmin(req)
+        if (!admin) return sendJSON(res, 401, { error: 'Unauthorized' })
+        try {
+          await db.delete(courses).where(eq(courses.id, id))
+          sendJSON(res, 200, { message: 'Course deleted' })
+        } catch (error) {
+          console.error(error)
+          sendJSON(res, 500, { error: 'Internal server error' })
+        }
+      })()
+    }
+  }
+
+  // GET /api/admin/students - list students
+  if (method === 'GET' && url === '/api/admin/students') {
+    return (async () => {
+      const admin = await verifyAdmin(req)
+      if (!admin) return sendJSON(res, 401, { error: 'Unauthorized' })
+      try {
+        const result = await db.select({
+          id: users.id,
+          username: users.username,
+          isActive: users.isActive,
+          createdAt: users.createdAt,
+        }).from(users).where(eq(users.role, 'student'))
+        sendJSON(res, 200, result)
+      } catch (error) {
+        console.error(error)
+        sendJSON(res, 500, { error: 'Internal server error' })
+      }
+    })()
+  }
+
+  // GET /api/user/profile - Get current user profile
+  if (method === 'GET' && url === '/api/user/profile') {
+    return (async () => {
+      try {
+        const session = verifySession(req)
+        if (!session) {
+          res.writeHead(401, { 'Content-Type': 'application/json' })
+          return res.end(JSON.stringify({ error: 'Not authenticated' }))
+        }
+
+        try {
+          const result = await db.select().from(users).where(eq(users.id, session.userId))
+          if (result.length === 0) {
+            res.writeHead(404, { 'Content-Type': 'application/json' })
+            return res.end(JSON.stringify({ error: 'User not found' }))
+          }
+
+          const user = result[0]
+          res.writeHead(200, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({
+            id: user.id,
+            username: user.username,
+            role: user.role,
+            isActive: user.isActive
+          }))
+        } catch (error) {
+          console.error(error)
+          res.writeHead(500, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ error: 'Internal server error' }))
+        }
+      } catch (error) {
+        console.error(error)
+        res.writeHead(500, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'Internal server error' }))
+      }
+    })()
   }
 
   else {
