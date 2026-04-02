@@ -25,17 +25,6 @@ CREATE TABLE IF NOT EXISTS courses (
   FOREIGN KEY (instructor_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
-CREATE TABLE IF NOT EXISTS course_schedules (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  course_id INT NOT NULL,
-  day_of_week ENUM('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday') NOT NULL,
-  start_time TIME NOT NULL,
-  end_time TIME NOT NULL,
-  room VARCHAR(100),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
-);
-
 CREATE TABLE IF NOT EXISTS enrollments (
   id INT AUTO_INCREMENT PRIMARY KEY,
   student_id INT NOT NULL,

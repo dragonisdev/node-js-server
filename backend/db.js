@@ -1,11 +1,12 @@
 require('dotenv').config()
 const mysql = require('mysql2/promise')
 const { drizzle } = require('drizzle-orm/mysql2')
-const { users, courses } = require('./schema')
+const { users, courses, enrollments } = require('./schema')
 
 // Use the full connection URL from Railway
 const pool = mysql.createPool(process.env.DATABASE_URL)
 
+//connect to db via drizzle
 const db = drizzle(pool)
 
-module.exports = { db, users, courses }
+module.exports = { db, users, courses, enrollments }

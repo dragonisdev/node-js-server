@@ -13,6 +13,17 @@ const sessions = new Map()
 
 // Simple rate limiter: max 10 requests per minute per IP
 const rateLimitStore = new Map()
+
+// Purge expired sessions and stale rate limit entries every 10 minutes
+setInterval(() => {
+  const now = Date.now()
+  for (const [id, session] of sessions) {
+    if (session.expiresAt < now) sessions.delete(id)
+  }
+  for (const [ip, entry] of rateLimitStore) {
+    if (now > entry.resetTime) rateLimitStore.delete(ip)
+  }
+}, 600_000).unref()
 function rateLimit(req) {
   const ip = req.socket.remoteAddress
   const now = Date.now()
@@ -62,7 +73,12 @@ function verifySession(req) {
   const sessionId = cookies.sessionId
   if (!sessionId) return null
   const session = sessions.get(sessionId)
-  return session || null
+  if (!session) return null
+  if (session.expiresAt < Date.now()) {
+    sessions.delete(sessionId)
+    return null
+  }
+  return session
 }
 
 // We check if user is admin with this function
@@ -159,8 +175,8 @@ const server = http.createServer((req, res) => {
     return serveFile(res, path.join(publicDir, 'admin-dashboard.html'), 'text/html')
   }
 
-  // serve course management page
-  if (method === 'GET' && url === '/course-management') {
+  // serve course management page but we must also be load a course by getting "course-management?id=1"
+  if (method === 'GET' && url.split('?')[0] === '/course-management') {
     return serveFile(res, path.join(publicDir, 'course-management.html'), 'text/html')
   }
 
@@ -194,7 +210,7 @@ const server = http.createServer((req, res) => {
             return res.end(JSON.stringify({ error: 'Invalid credentials' }))
           }
           const sessionId = generateSessionId()
-          sessions.set(sessionId, { userId: user.id, username: user.username })
+          sessions.set(sessionId, { userId: user.id, username: user.username, expiresAt: Date.now() + 3_600_000 })
           res.writeHead(200, {
             'Content-Type': 'application/json',
             'Set-Cookie': `sessionId=${sessionId}; HttpOnly; SameSite=Strict; Path=/; Max-Age=3600`

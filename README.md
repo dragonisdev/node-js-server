@@ -2,6 +2,8 @@
 
 A simple web application for managing courses, students, and instructors. Built with vanilla Node.js for a school project and internship practice.
 
+## You have my full permission to hack this app. If it is vulnerable, email me please and I'll give you a reward.
+
 ### What it does
 - Login system for students, instructors, and admins
 - Instructors can create and manage courses with schedules

@@ -1,5 +1,6 @@
 const { mysqlTable, serial, varchar, timestamp, int, boolean, date, mysqlEnum } = require('drizzle-orm/mysql-core');
 
+// Drizzle ORM imports for interacting with database without making direct SQL queries
 const users = mysqlTable('users', {
   id: serial('id').primaryKey(),
   username: varchar('username', { length: 255 }).unique().notNull(),
@@ -24,4 +25,16 @@ const courses = mysqlTable('courses', {
   updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
 });
 
-module.exports = { users, courses };
+const enrollments = mysqlTable('enrollments', {
+  id: serial('id').primaryKey(),
+  userId: int('user_id').notNull(),
+  courseId: int('course_id').notNull(),
+  enrollmentDate: timestamp('enrollment_date').defaultNow(),
+  status: mysqlEnum('status', ['enrolled', 'dropped', 'completed']).default('enrolled'),
+  grade: varchar('grade', { length: 5 }),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
+});
+
+
+module.exports = { users, courses, enrollments };
