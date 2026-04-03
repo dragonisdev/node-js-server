@@ -175,8 +175,8 @@ const server = http.createServer((req, res) => {
     return serveFile(res, path.join(publicDir, 'style.css'), 'text/css')
   }
 
-  if (method === 'GET' && url === '/script.js') {
-    return serveFile(res, path.join(publicDir, 'script.js'), 'application/javascript')
+  if (method === 'GET' && url === '/authentication.js') {
+    return serveFile(res, path.join(publicDir, 'authentication.js'), 'application/javascript')
   }
 
   // serve register page
@@ -211,9 +211,9 @@ const server = http.createServer((req, res) => {
     return serveFile(res, path.join(publicDir, 'course-management.html'), 'text/html')
   }
 
-  // serve admin.js
-  if (method === 'GET' && url === '/admin.js') {
-    return serveFile(res, path.join(publicDir, 'admin.js'), 'application/javascript')
+  // serve admin-dashboard.js
+  if (method === 'GET' && url === '/admin-dashboard.js') {
+    return serveFile(res, path.join(publicDir, 'admin-dashboard.js'), 'application/javascript')
   }
 
   // serve course-management.js
@@ -395,12 +395,14 @@ const server = http.createServer((req, res) => {
         if (!admin) return sendJSON(res, 401, { error: 'Unauthorized' })
         try {
           const body = await parseBody(req)
-          const { title, courseCode, credits, maxStudents, startDate, endDate, isActive } = body        if (!title || typeof title !== 'string' || title.trim().length === 0 || title.length > 255) return sendJSON(res, 400, { error: 'Invalid title' })
+          const { title, courseCode, credits, maxStudents, startDate, endDate, isActive } = body
+        if (!title || typeof title !== 'string' || title.trim().length === 0 || title.length > 255) return sendJSON(res, 400, { error: 'Invalid title' })
         if (!courseCode || typeof courseCode !== 'string' || courseCode.trim().length === 0 || courseCode.length > 20) return sendJSON(res, 400, { error: 'Invalid course code' })
         const creditsNum = Number(credits)
         const maxStudentsNum = Number(maxStudents)
         if (!Number.isInteger(creditsNum) || creditsNum < 1 || creditsNum > 20) return sendJSON(res, 400, { error: 'Credits must be an integer between 1 and 20' })
-        if (!Number.isInteger(maxStudentsNum) || maxStudentsNum < 1 || maxStudentsNum > 1000) return sendJSON(res, 400, { error: 'Max students must be an integer between 1 and 1000' })          await db.update(courses).set({
+        if (!Number.isInteger(maxStudentsNum) || maxStudentsNum < 1 || maxStudentsNum > 1000) return sendJSON(res, 400, { error: 'Max students must be an integer between 1 and 1000' })
+          await db.update(courses).set({
             title,
             courseCode,
             credits: Number(credits),

@@ -31,19 +31,32 @@ For the database, set up your own MySQL database and run the schema file in the 
 ### Folder structure
 
 ```
-student-crud-app/
-├── node_modules/
-├── backend/              # Backend files
-│   ├── db.js             # Database connection logic (cleaner than putting it in server.js)
-│   └── server.js         # Main entry point (Backend logic)
-├── client/               # All frontend files (Client-side)
-│   ├── index.html
-│   ├── style.css
-│   └── script.js
-├── tests/                # Unit tests
-    └── test.js
-├── .env
+node-js-server/
+├── backend/                      # Backend files
+│   ├── middleware/                # Express-style middleware
+│   ├── db.js                     # Database connection and Drizzle ORM setup
+│   ├── schema.js                 # Drizzle ORM table definitions
+│   ├── schema.sql                # Raw SQL schema for reference
+│   └── server.js                 # Main entry point (all route handling)
+├── client/                       # All frontend files (Client-side)
+│   ├── public/                   # Statically served assets
+│   ├── admin-dashboard.html      # Admin dashboard page
+│   ├── admin-dashboard.js        # Admin dashboard logic
+│   ├── authentication.js         # Login and registration logic
+│   ├── course-management.html    # Course management page
+│   ├── course-management.js      # Course management logic
+│   ├── login.html                # Login page
+│   ├── register.html             # Registration page
+│   ├── student-dashboard.html    # Student dashboard page
+│   ├── student-dashboard.js      # Student dashboard logic
+│   └── style.css                 # Global stylesheet
+├── tests/                        # Unit tests
+│   ├── db.test.js                # Database tests
+│   └── test.js                   # Server/route tests
+├── .env                          # Environment variables (not committed)
+├── .env.example                  # Example environment variables
 ├── .gitignore
+└── package.json
 ```
 
 The final project will be hosted on Railway PaaS and uses their MySQL database
