@@ -1,3 +1,7 @@
+function escapeHTML(str) {
+  return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
+}
+
 // When the page loads, run these functions
 window.onload = async function () {
   await loadProfile()
@@ -49,8 +53,8 @@ async function loadCourses() {
 
     const row = document.createElement('tr')
     row.innerHTML = `
-      <td>${course.courseCode}</td>
-      <td>${course.title}</td>
+      <td>${escapeHTML(course.courseCode)}</td>
+      <td>${escapeHTML(course.title)}</td>
       <td>${course.credits}</td>
       <td>${course.maxStudents}</td>
       <td>${startDate}</td>
@@ -108,7 +112,7 @@ async function loadStudents() {
 
     const row = document.createElement('tr')
     row.innerHTML = `
-      <td>${student.username}</td>
+      <td>${escapeHTML(student.username)}</td>
       <td>${registered}</td>
       <td><span class="badge ${statusClass}">${status}</span></td>
     `

@@ -21,7 +21,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
                 const data = await response.json()
                 if (response.ok) {
-                    window.location.href = '/admin-dashboard'
+                    const profileRes = await fetch('/api/user/profile')
+                    const user = await profileRes.json()
+                    window.location.href = user.role === 'admin' ? '/admin-dashboard' : '/student-dashboard'
                 } else {
                     message.textContent = data.error || 'Login failed'
                     message.style.color = 'red'
@@ -56,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
                 const data = await response.json()
                 if (response.ok) {
-                    window.location.href = '/admin-dashboard'
+                    window.location.href = '/student-dashboard'
                 } else {
                     message.textContent = data.error || 'Registration failed'
                     message.style.color = 'red'

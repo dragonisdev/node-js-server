@@ -8,6 +8,8 @@ const crypto = require('crypto')
 
 const PORT = process.env.PORT || 3000
 
+/* HELPER FUNCTIONS BELOW
+___________________________________________*/
 // Store active sessions as a map
 const sessions = new Map()
 
@@ -139,12 +141,24 @@ function serveFile(res, filePath, contentType) {
       res.writeHead(404)
       return res.end('Not found')
     }
-    res.writeHead(200, { 'Content-Type': contentType })
+  
+    const headers = { 'Content-Type': contentType }
+    if (contentType === 'text/html') {
+      headers['Content-Security-Policy'] =
+        "default-src 'self'; " +
+        "script-src 'self'; " +
+        "style-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; " +
+        "font-src https://fonts.gstatic.com; " +
+        "img-src 'self'; " +
+        "connect-src 'self'"
+    }
+    res.writeHead(200, headers)
     res.end(data)
   })
 }
 
-// serve actual files
+/* server to serve actual files
+___________________________________________*/
 
 const server = http.createServer((req, res) => {
   const { method, url } = req
@@ -170,9 +184,26 @@ const server = http.createServer((req, res) => {
     return serveFile(res, path.join(publicDir, 'register.html'), 'text/html')
   }
 
-  // serve admin dashboard page
+  // serve admin dashboard page - admin only
   if (method === 'GET' && url === '/admin-dashboard') {
-    return serveFile(res, path.join(publicDir, 'admin-dashboard.html'), 'text/html')
+    return (async () => {
+      const admin = await verifyAdmin(req)
+      if (!admin) {
+        res.writeHead(302, { 'Location': '/' })
+        return res.end()
+      }
+      return serveFile(res, path.join(publicDir, 'admin-dashboard.html'), 'text/html')
+    })()
+  }
+
+  // serve student dashboard page - authenticated users only
+  if (method === 'GET' && url === '/student-dashboard') {
+    const session = verifySession(req)
+    if (!session) {
+      res.writeHead(302, { 'Location': '/' })
+      return res.end()
+    }
+    return serveFile(res, path.join(publicDir, 'student-dashboard.html'), 'text/html')
   }
 
   // serve course management page but we must also be load a course by getting "course-management?id=1"
@@ -236,6 +267,9 @@ const server = http.createServer((req, res) => {
       try {
         const body = await parseBody(req)
         const { username, password } = body
+        if (!username || !password) return sendJSON(res, 400, { error: 'Username and password are required' })
+        if (!/^[a-zA-Z0-9_]{1,50}$/.test(username)) return sendJSON(res, 400, { error: 'Username must be 1–50 alphanumeric characters or underscores' })
+        if (password.length < 8 || password.length > 128) return sendJSON(res, 400, { error: 'Password must be 8–128 characters' })
         try {
           const hashedPassword = await bcrypt.hash(password, 10)
           await db.insert(users).values({
@@ -309,6 +343,12 @@ const server = http.createServer((req, res) => {
       try {
         const body = await parseBody(req)
         const { title, courseCode, credits, maxStudents, startDate, endDate } = body
+        if (!title || typeof title !== 'string' || title.trim().length === 0 || title.length > 255) return sendJSON(res, 400, { error: 'Invalid title' })
+        if (!courseCode || typeof courseCode !== 'string' || courseCode.trim().length === 0 || courseCode.length > 20) return sendJSON(res, 400, { error: 'Invalid course code' })
+        const creditsNum = Number(credits)
+        const maxStudentsNum = Number(maxStudents)
+        if (!Number.isInteger(creditsNum) || creditsNum < 1 || creditsNum > 20) return sendJSON(res, 400, { error: 'Credits must be an integer between 1 and 20' })
+        if (!Number.isInteger(maxStudentsNum) || maxStudentsNum < 1 || maxStudentsNum > 1000) return sendJSON(res, 400, { error: 'Max students must be an integer between 1 and 1000' })
         await db.insert(courses).values({
           title,
           courseCode,
@@ -355,8 +395,12 @@ const server = http.createServer((req, res) => {
         if (!admin) return sendJSON(res, 401, { error: 'Unauthorized' })
         try {
           const body = await parseBody(req)
-          const { title, courseCode, credits, maxStudents, startDate, endDate, isActive } = body
-          await db.update(courses).set({
+          const { title, courseCode, credits, maxStudents, startDate, endDate, isActive } = body        if (!title || typeof title !== 'string' || title.trim().length === 0 || title.length > 255) return sendJSON(res, 400, { error: 'Invalid title' })
+        if (!courseCode || typeof courseCode !== 'string' || courseCode.trim().length === 0 || courseCode.length > 20) return sendJSON(res, 400, { error: 'Invalid course code' })
+        const creditsNum = Number(credits)
+        const maxStudentsNum = Number(maxStudents)
+        if (!Number.isInteger(creditsNum) || creditsNum < 1 || creditsNum > 20) return sendJSON(res, 400, { error: 'Credits must be an integer between 1 and 20' })
+        if (!Number.isInteger(maxStudentsNum) || maxStudentsNum < 1 || maxStudentsNum > 1000) return sendJSON(res, 400, { error: 'Max students must be an integer between 1 and 1000' })          await db.update(courses).set({
             title,
             courseCode,
             credits: Number(credits),
