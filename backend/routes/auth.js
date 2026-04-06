@@ -106,8 +106,8 @@ async function handle(req, res) {
       sendJSON(res, 400, { error: 'Username must be 1–50 alphanumeric characters or underscores' })
       return true
     }
-    if (password.length < 8 || password.length > 128) {
-      sendJSON(res, 400, { error: 'Password must be 8–128 characters' })
+    if (password.length < 8 || password.length > 48) {
+      sendJSON(res, 400, { error: 'Password must be 8–48 characters' })
       return true
     }
 
