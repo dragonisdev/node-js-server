@@ -1,5 +1,6 @@
 const http = require('http')
 const path = require('path')
+const fs = require('fs')
 const { serveFile, verifySession, verifyAdmin } = require('./helpers')
 const authRoutes = require('./routes/auth')
 const adminRoutes = require('./routes/admin')
@@ -7,6 +8,15 @@ const studentRoutes = require('./routes/student')
 
 const PORT = process.env.PORT || 3000
 const publicDir = path.join(__dirname, '../client')
+
+// file types we serve from client
+const mimeTypes = {
+  '.css': 'text/css',
+  '.js': 'application/javascript',
+  '.html': 'text/html',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+}
 
 const server = http.createServer(async (req, res) => {
   const { method, url } = req
@@ -46,24 +56,15 @@ const server = http.createServer(async (req, res) => {
     return serveFile(res, path.join(publicDir, 'course-management.html'), 'text/html')
   }
 
-  if (method === 'GET' && url === '/style.css') {
-    return serveFile(res, path.join(publicDir, 'style.css'), 'text/css')
-  }
-
-  if (method === 'GET' && url === '/authentication.js') {
-    return serveFile(res, path.join(publicDir, 'authentication.js'), 'application/javascript')
-  }
-
-  if (method === 'GET' && url === '/admin-dashboard.js') {
-    return serveFile(res, path.join(publicDir, 'admin-dashboard.js'), 'application/javascript')
-  }
-
-  if (method === 'GET' && url === '/course-management.js') {
-    return serveFile(res, path.join(publicDir, 'course-management.js'), 'application/javascript')
-  }
-
-  if (method === 'GET' && url === '/student-dashboard.js') {
-    return serveFile(res, path.join(publicDir, 'student-dashboard.js'), 'application/javascript')
+  // General static file handler
+  if (method === 'GET') {
+    const filePath = path.join(publicDir, url)
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+      const ext = path.extname(filePath).toLowerCase()
+      // if user requests weird file mimetype, thats not defined within the file types above,
+      // we just let them download it instead
+      return serveFile(res, filePath, mimeTypes[ext] || 'application/octet-stream')
+    }
   }
 
   /* --------------------------------------------------------

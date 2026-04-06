@@ -636,3 +636,10 @@ body:has(.admin-dashboard) {
   color: #4caf50;
   border: 1px solid rgba(76, 175, 80, 0.3);
 }
+
+.logo {
+  max-width: 40%;
+  max-height: 40%;
+  display: block;
+  margin: 0 auto;
+}
