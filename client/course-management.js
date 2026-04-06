@@ -1,5 +1,11 @@
 let editingId = null
 
+// Escapes special HTML characters to prevent XSS when inserting user data into the DOM
+function escapeHTML(str) {
+  const escapeMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
+  return String(str).replace(/[&<>"']/g, char => escapeMap[char])
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   loadProfile()
 

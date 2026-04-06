@@ -1,8 +1,9 @@
+// Escapes special HTML characters to prevent XSS when inserting user data into the DOM
 function escapeHTML(str) {
-  return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
+  const escapeMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
+  return String(str).replace(/[&<>"']/g, char => escapeMap[char])
 }
 
-// When the page loads, run these functions
 window.onload = async function () {
   await loadProfile()
   await loadCourses()
@@ -14,7 +15,7 @@ window.onload = async function () {
   }
 }
 
-// Load the logged in admin's username and show it in the header
+// Fetches the logged-in admin's profile and shows their username in the header
 async function loadProfile() {
   const response = await fetch('/api/user/profile')
 
@@ -27,7 +28,7 @@ async function loadProfile() {
   document.getElementById('adminUsername').textContent = user.username
 }
 
-// Load all courses from the server and build the table rows
+// Fetches all courses and renders them into the courses table
 async function loadCourses() {
   const response = await fetch('/api/admin/courses')
 
@@ -56,6 +57,7 @@ async function loadCourses() {
       <td>${escapeHTML(course.courseCode)}</td>
       <td>${escapeHTML(course.title)}</td>
       <td>${course.credits}</td>
+      <td>${course.enrolledCount} / ${course.maxStudents}</td>
       <td>${course.maxStudents}</td>
       <td>${startDate}</td>
       <td>${endDate}</td>
@@ -64,16 +66,17 @@ async function loadCourses() {
         <a href="/course-management?id=${course.id}" class="btn-icon btn-edit" title="Edit">
           <span class="material-icons">edit</span>
         </a>
-        <button type="button" class="btn-icon btn-delete" title="Delete" onclick="deleteCourse(${course.id})">
+        <button type="button" class="btn-icon btn-delete" title="Delete">
           <span class="material-icons">delete</span>
         </button>
       </td>
     `
+    row.querySelector('.btn-delete').addEventListener('click', () => deleteCourse(course.id))
     tbody.appendChild(row)
   }
 }
 
-// Delete a course by ID, then reload the courses table
+// Asks for confirmation then deletes the course and refreshes the table
 async function deleteCourse(id) {
   const confirmed = confirm('Are you sure you want to delete this course?')
   if (!confirmed) return
@@ -87,7 +90,7 @@ async function deleteCourse(id) {
   }
 }
 
-// Load all students from the server and build the table rows
+// Fetches all students and renders them into the students table
 async function loadStudents() {
   const response = await fetch('/api/admin/students')
 

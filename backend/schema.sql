@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(255) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
-  role ENUM('admin', 'instructor', 'student') NOT NULL DEFAULT 'student',
+  role ENUM('admin', 'student') NOT NULL DEFAULT 'student',
 
   is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

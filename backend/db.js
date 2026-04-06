@@ -6,7 +6,7 @@ const { users, courses, enrollments } = require('./schema')
 // Use the full connection URL from Railway
 const pool = mysql.createPool(process.env.DATABASE_URL)
 
-//connect to db via drizzle
+// Connect to db via drizzle
 const db = drizzle(pool)
 
 module.exports = { db, users, courses, enrollments }

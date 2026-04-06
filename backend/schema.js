@@ -27,10 +27,10 @@ const courses = mysqlTable('courses', {
 
 const enrollments = mysqlTable('enrollments', {
   id: serial('id').primaryKey(),
-  userId: int('user_id').notNull(),
+  studentId: int('student_id').notNull(),
   courseId: int('course_id').notNull(),
   enrollmentDate: timestamp('enrollment_date').defaultNow(),
-  status: mysqlEnum('status', ['enrolled', 'dropped', 'completed']).default('enrolled'),
+  status: mysqlEnum('status', ['enrolled', 'dropped', 'completed', 'withdrawn']).default('enrolled'),
   grade: varchar('grade', { length: 5 }),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
