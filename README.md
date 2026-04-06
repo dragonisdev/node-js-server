@@ -1,29 +1,29 @@
-Course Management System
+## Course Management System
 
 A simple web app for managing courses, students, and instructors. Built with vanilla Node.js for a school project and internship practice.
 
-You have my full permission to hack this app. If it is vulnerable, email me please.
+## You have my full permission to hack this app. If it is vulnerable, email me please.
 
-What it does:
+### What it does:
 - Login system for students and admins
 - Admins can create and manage courses with schedules
 - Students can enroll in courses and view their schedules
 - Track student grades and enrollment status
 
-Security Features:
+### Security Features:
 - Password hashing with bcrypt
 - Session-based authentication with HTTP-only, SameSite=Strict cookies
 - Role-based access control (admin, student)
 - Rate limiting on auth endpoints (in-memory)
 - Content Security Policy (CSP) headers on all HTML responses
 
-Database:
+### Database:
 - MySQL database with proper relationships
 - Uses Drizzle ORM for queries and schema management
 - Stores users, courses, schedules, and enrollments
 - Handles course capacity and scheduling
 
-How to run this?
+## How to run this?
 
 `npm i to install dependencies`
 
@@ -31,7 +31,7 @@ How to run this?
 
 For the database, set up your own MySQL database and run the schema file in the backend folder.
 
-Folder structure:
+## Folder structure:
 
 ```
 node-js-server/
@@ -68,7 +68,7 @@ node-js-server/
 └── .gitignore
 ```
 
-The final project will be hosted on Railway PaaS and uses their MySQL database
+## The final project will be hosted on Railway PaaS and uses their MySQL database
 
 Security notes:
 - CSRF protection via SameSite=Strict cookies (same-origin requests only)
