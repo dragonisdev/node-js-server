@@ -2,7 +2,7 @@
 
 A simple web app for managing courses, students, and instructors. Built with vanilla Node.js for a school project and internship practice.
 
-## You have my full permission to hack this app. If it is vulnerable, email me please.
+You have my full permission to hack this app. If it is vulnerable, email me please: https://node-js-server-production-6590.up.railway.app/
 
 ### What it does:
 - Login system for students and admins

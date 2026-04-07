@@ -10,7 +10,7 @@ async function handle(req, res) {
   if (!url.startsWith('/api/user/') && !url.startsWith('/api/student/')) return false
 
   /* --------------------------------------------------------
-   * GET ALL USER PROFILES
+   * GET CURRENT USER PROFILES
    * Any authenticated user (admin or student) can access this
    * -------------------------------------------------------- */
 
@@ -248,8 +248,8 @@ async function handle(req, res) {
       return true
     }
 
-    const courseId = parseInt(url.split('/')[4])
-    if (isNaN(courseId)) {
+    const courseId = Number(url.split('/')[4])
+    if (!Number.isInteger(courseId) || courseId < 1) {
       sendJSON(res, 400, { error: 'Invalid course ID' })
       return true
     }
